@@ -1,7 +1,7 @@
 # simulation-based approach to calculate the sample size required for 
 # external validation of a particular prediction model for a binary outcome
 # coded in parallel
-# 02-December-2020
+# Written by Gary Collins (02-December-2020)
 
 library(doParallel)
 library(foreach)
