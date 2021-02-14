@@ -1,6 +1,8 @@
 # simulation-based approach to calculate the sample size required for 
 # external validation of a particular prediction model for a binary outcome
-
+#
+# Written by Gary Collins Dec 2020
+#
 set.seed(200520)
 
 ## needs the rms package to be installed 
