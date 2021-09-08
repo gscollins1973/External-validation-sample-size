@@ -4,6 +4,8 @@
 ### the precision in step 3 is achieved
 ### (I'll wrap this all up at some point to remove the manual steps)
 
+### requires the rms package to be installed
+
 ici.f <- function(Y, P){
   loess.calibrate <- loess(Y ~ P)
   P.calibrate     <- predict(loess.calibrate, newdata = P)
