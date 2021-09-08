@@ -1,0 +1,72 @@
+### code for the DVT example.
+### This can easily be tweaked for your problem in steps 1-3
+### in step 4, you will need to manually change the N until 
+### the precision in step 3 is achieved
+### (I'll wrap this all up at some point to remove the manual steps)
+
+ici.f <- function(Y, P){
+  loess.calibrate <- loess(Y ~ P)
+  P.calibrate     <- predict(loess.calibrate, newdata = P)
+  return(mean(abs(P.calibrate - P)))
+}
+
+# step 1
+mu.LP <- -1.75 
+sd.LP <-  1.47
+
+# step 2
+gamma <- 0
+S     <- 1
+
+# step 3
+csdiff    <- 0.1 
+cstatdiff <- 0.05 
+lnoediff  <- 0.1
+
+#step 4
+N     <- 2430 ## change this until all half CI widths are lower than the pre-specified values in step 3
+N.SIM <- 1000
+slope             <- vector(mode = 'numeric', length = N.SIM)
+slope.se          <- vector(mode = 'numeric', length = N.SIM)
+slope.width       <- vector(mode = 'numeric', length = N.SIM)
+c.statistic       <- vector(mode = 'numeric', length = N.SIM)
+c.statistic.se    <- vector(mode = 'numeric', length = N.SIM)
+c.statistic.width <- vector(mode = 'numeric', length = N.SIM)
+OE                <- vector(mode = 'numeric', length = N.SIM)
+OE.se             <- vector(mode = 'numeric', length = N.SIM)
+OE.width          <- vector(mode = 'numeric', length = N.SIM)
+ici               <- vector(mode = 'numeric', length = N.SIM)
+
+set.seed(12131)
+for(i in 1:N.SIM){
+  LP <- rnorm(N, mu.LP, sd.LP)
+  pr <- 1 / (1 + exp(-LP))
+  y  <- rbinom(N, 1, pr)
+  df <- data.frame(y = y, LP = LP)
+  fit <- rms::lrm(y~LP, data = df, x = T, y=T)
+  slope[i]       <- as.numeric(coef(fit)[2])
+  slope.se[i]    <- as.numeric(sqrt(diag(vcov(fit)))[2])
+  slope.width[i] <- 2 * qnorm(0.025, lower = F) * slope.se[i]
+  
+  OE[i]    <- mean(pr)/mean(y)
+  OE.se[i] <- sqrt((1-mean(pr))/sum(y))
+  OE.width[i] <- 2 * qnorm(0.025, lower = F) * OE.se[i]
+  
+  ici[i] <- ici.f(Y = y, P = pr)
+  
+  # get the c-statistic, its standard error and 95% CI width
+  c.statistic[i]       <- as.numeric(fit$stats['C'])
+  c.statistic.se[i]    <- hanley_se_auc(c.statistic[i], y)
+  c.statistic.width[i] <- 2 * qnorm(0.025, lower = F) * c.statistic.se[i]
+         
+  # store the number outcomes simulated 
+  events[i] <- table(y)[2]
+}
+mean(c.statistic)
+mean(slope)
+mean(OE)
+mean(ici)
+
+mean(c.statistic.width)/2
+mean(slope.width)/2
+mean(OE.width)/2
