@@ -16,9 +16,9 @@ ici.f <- function(Y, P){
 mu.LP <- -1.75 
 sd.LP <-  1.47
 
-# step 2
-gamma <- 0
-S     <- 1
+# step 2 (under the assumption that gamma = 0; S=1)
+# gamma <- 0
+# S     <- 1
 
 # step 3
 csdiff    <- 0.1 
