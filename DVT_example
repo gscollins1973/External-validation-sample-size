@@ -4,21 +4,28 @@
 ### the precision in step 3 is achieved
 ### (I'll wrap this all up at some point to remove the manual steps)
 
-### requires the rms package to be installed
-
 ici.f <- function(Y, P){
   loess.calibrate <- loess(Y ~ P)
   P.calibrate     <- predict(loess.calibrate, newdata = P)
   return(mean(abs(P.calibrate - P)))
 }
 
+hanley_se_auc <- function(x, y){
+  ### standard error for the C-statistic based on Hanley's formula
+  n1 <- sum(y == 0)
+  n2 <- sum(y == 1)
+  Q1 <- x / (2 - x)
+  Q2 <- 2 * x^2 / (1 + x)
+  sqrt((x*(1-x) + (n1-1)*(Q1-x^2)+(n2-1)*(Q2-x^2)) / (n1*n2))
+}
+
 # step 1
 mu.LP <- -1.75 
 sd.LP <-  1.47
 
-# step 2 (under the assumption that gamma = 0; S=1)
-# gamma <- 0
-# S     <- 1
+# step 2
+gamma <- 0
+S     <- 1
 
 # step 3
 csdiff    <- 0.1 
@@ -34,10 +41,11 @@ slope.width       <- vector(mode = 'numeric', length = N.SIM)
 c.statistic       <- vector(mode = 'numeric', length = N.SIM)
 c.statistic.se    <- vector(mode = 'numeric', length = N.SIM)
 c.statistic.width <- vector(mode = 'numeric', length = N.SIM)
-OE                <- vector(mode = 'numeric', length = N.SIM)
-OE.se             <- vector(mode = 'numeric', length = N.SIM)
-OE.width          <- vector(mode = 'numeric', length = N.SIM)
+lnOE              <- vector(mode = 'numeric', length = N.SIM)
+lnOE.se           <- vector(mode = 'numeric', length = N.SIM)
+lnOE.width        <- vector(mode = 'numeric', length = N.SIM)
 ici               <- vector(mode = 'numeric', length = N.SIM)
+events            <- vector(mode = 'numeric', length = N.SIM)
 
 set.seed(12131)
 for(i in 1:N.SIM){
@@ -50,9 +58,9 @@ for(i in 1:N.SIM){
   slope.se[i]    <- as.numeric(sqrt(diag(vcov(fit)))[2])
   slope.width[i] <- 2 * qnorm(0.025, lower = F) * slope.se[i]
   
-  OE[i]    <- mean(pr)/mean(y)
-  OE.se[i] <- sqrt((1-mean(pr))/sum(y))
-  OE.width[i] <- 2 * qnorm(0.025, lower = F) * OE.se[i]
+  lnOE[i]       <- log(mean(pr) / mean(y))
+  lnOE.se[i]    <- sqrt((1-mean(pr)) / sum(y))
+  lnOE.width[i] <- 2 * qnorm(0.025, lower = F) * lnOE.se[i]
   
   ici[i] <- ici.f(Y = y, P = pr)
   
@@ -66,9 +74,9 @@ for(i in 1:N.SIM){
 }
 mean(c.statistic)
 mean(slope)
-mean(OE)
+mean(exp(lnOE))
 mean(ici)
 
-mean(c.statistic.width)/2
-mean(slope.width)/2
-mean(OE.width)/2
+mean(c.statistic.width)/2 # should be less than csdiff (0.05)
+mean(slope.width)/2       # should be less than cstatdiff (0.1) -> driven by this criteria
+mean(lnOE.width)/2        # should be less than lnoediff (0.1)
