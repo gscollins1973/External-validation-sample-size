@@ -4,20 +4,14 @@
 ### the precision in step 3 is achieved
 ### (I'll wrap this all up at some point to remove the manual steps)
 
+## requires pROC package to be installed
+
 ici.f <- function(Y, P){
   loess.calibrate <- loess(Y ~ P)
   P.calibrate     <- predict(loess.calibrate, newdata = P)
   return(mean(abs(P.calibrate - P)))
 }
 
-hanley_se_auc <- function(x, y){
-  ### standard error for the C-statistic based on Hanley's formula
-  n1 <- sum(y == 0)
-  n2 <- sum(y == 1)
-  Q1 <- x / (2 - x)
-  Q2 <- 2 * x^2 / (1 + x)
-  sqrt((x*(1-x) + (n1-1)*(Q1-x^2)+(n2-1)*(Q2-x^2)) / (n1*n2))
-}
 
 # step 1
 mu.LP <- -1.75 
@@ -33,19 +27,21 @@ cstatdiff <- 0.05
 lnoediff  <- 0.1
 
 #step 4
-N     <- 2430 ## change this until all half CI widths are lower than the pre-specified values in step 3
+N     <- 385 ## change this until all half CI widths are lower than the pre-specified values in step 3
 N.SIM <- 1000
-slope             <- vector(mode = 'numeric', length = N.SIM)
-slope.se          <- vector(mode = 'numeric', length = N.SIM)
-slope.width       <- vector(mode = 'numeric', length = N.SIM)
-c.statistic       <- vector(mode = 'numeric', length = N.SIM)
-c.statistic.se    <- vector(mode = 'numeric', length = N.SIM)
-c.statistic.width <- vector(mode = 'numeric', length = N.SIM)
-lnOE              <- vector(mode = 'numeric', length = N.SIM)
-lnOE.se           <- vector(mode = 'numeric', length = N.SIM)
-lnOE.width        <- vector(mode = 'numeric', length = N.SIM)
-ici               <- vector(mode = 'numeric', length = N.SIM)
-events            <- vector(mode = 'numeric', length = N.SIM)
+slope              <- vector(mode = 'numeric', length = N.SIM)
+slope.se           <- vector(mode = 'numeric', length = N.SIM)
+slope.width        <- vector(mode = 'numeric', length = N.SIM)
+
+c.statistic        <- vector(mode = 'numeric', length = N.SIM)
+c.statistic.se     <- vector(mode = 'numeric', length = N.SIM)
+c.statistic.width  <- vector(mode = 'numeric', length = N.SIM)
+
+lnOE               <- vector(mode = 'numeric', length = N.SIM)
+lnOE.se            <- vector(mode = 'numeric', length = N.SIM)
+lnOE.width         <- vector(mode = 'numeric', length = N.SIM)
+ici                <- vector(mode = 'numeric', length = N.SIM)
+events             <- vector(mode = 'numeric', length = N.SIM)
 
 set.seed(12131)
 for(i in 1:N.SIM){
@@ -65,10 +61,10 @@ for(i in 1:N.SIM){
   ici[i] <- ici.f(Y = y, P = pr)
   
   # get the c-statistic, its standard error and 95% CI width
-  c.statistic[i]       <- as.numeric(fit$stats['C'])
-  c.statistic.se[i]    <- hanley_se_auc(c.statistic[i], y)
+  c.statistic[i]        <- as.numeric(fit$stats['C'])
+  c.statistic.se[i]    <- sqrt(var(pROC::roc(y, LP, levels=c(0,1), quiet=T)))
   c.statistic.width[i] <- 2 * qnorm(0.025, lower = F) * c.statistic.se[i]
-         
+  
   # store the number outcomes simulated 
   events[i] <- table(y)[2]
 }
@@ -77,6 +73,7 @@ mean(slope)
 mean(exp(lnOE))
 mean(ici)
 
-mean(c.statistic.width)/2 # should be less than csdiff (0.05)
-mean(slope.width)/2       # should be less than cstatdiff (0.1) -> driven by this criteria
-mean(lnOE.width)/2        # should be less than lnoediff (0.1)
+mean(c.statistic.width) 
+
+mean(slope.width)       
+mean(lnOE.width)        
