@@ -62,7 +62,7 @@ for(i in 1:N.SIM){
   
   # get the c-statistic, its standard error and 95% CI width
   c.statistic[i]        <- as.numeric(fit$stats['C'])
-  c.statistic.se[i]    <- sqrt(var(pROC::roc(y, LP, levels=c(0,1), quiet=T)))
+  c.statistic.se[i]    <- sqrt(var(pROC::roc(y, LP, levels=c(0,1), quiet=T))) # based on delong 1988
   c.statistic.width[i] <- 2 * qnorm(0.025, lower = F) * c.statistic.se[i]
   
   # store the number outcomes simulated 
